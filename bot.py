@@ -11,35 +11,25 @@ from aiogram.client.default import DefaultBotProperties
 # Конфигурация логирования
 logging.basicConfig(level=logging.INFO)
 
-# Получаем токен бота из переменных окружения
-# На Render это обычно устанавливается как "KEY" или "BOT_TOKEN" в настройках
-TOKEN = os.getenv("BOT_TOKEN") # Изменено с "KEY" на "BOT_TOKEN" для ясности
+TOKEN = os.getenv("BOT_TOKEN")
+WEB_APP_URL = os.getenv("WEB_APP_URL", "https://your-fastapi-service.onrender.com")
 
-# URL вашего FastAPI сервиса на Render, который будет отдавать Web App
-# ЭТУ ССЫЛКУ НУЖНО БУДЕТ ЗАМЕНИТЬ НА РЕАЛЬНЫЙ URL ВАШЕГО РАЗВЕРНУТОГО FastAPI-СЕРВИСА НА RENDER!
-WEB_APP_URL = os.getenv("WEB_APP_URL", "https://cs-2.onrender.com") # Пример
-
-# Убедитесь, что токен доступен
 if not TOKEN:
     logging.error("Telegram Bot Token (BOT_TOKEN) not found in environment variables.")
     exit(1)
 
-# Инициализация бота с новыми настройками по умолчанию для aiogram 3.x
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
 # Обработчик команды /start
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
-    """
-    Этот хэндлер отвечает на команду /start и предлагает открыть Web App.
-    """
     markup = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text="🎲 Открыть рулетку",
-                    web_app=WebAppInfo(url=f"{WEB_APP_URL}/") # Ссылка на корень FastAPI, который отдает index.html
+                    web_app=WebAppInfo(url=f"{WEB_APP_URL}/")
                 )
             ]
         ]
@@ -51,9 +41,14 @@ async def command_start_handler(message: Message) -> None:
 
 # Основная функция запуска бота
 async def main() -> None:
-    # Запускаем все зарегистрированные хэндлеры
-    logging.info("Starting bot polling...")
+    # !!! ДОБАВЬТЕ ЭТУ СТРОКУ, ЧТОБЫ УДАЛИТЬ WEBHOOK !!!
+    logging.info("Deleting old webhooks...")
+    await bot.delete_webhook(drop_pending_updates=True) # drop_pending_updates=True удалит все необработанные обновления
+    logging.info("Webhook deleted. Starting bot polling...")
+    # !!! КОНЕЦ ДОБАВЛЕННОГО КОДА !!!
+
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
