@@ -1,12 +1,17 @@
 import asyncio
 import logging
 import os
+from threading import Thread
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.client.default import DefaultBotProperties
+
+# Для FastAPI
+from fastapi import FastAPI
+import uvicorn
 
 # Конфигурация логирования
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +26,7 @@ if not TOKEN:
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
-# Обработчик команды /start
+# --- Код вашего бота ---
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     markup = InlineKeyboardMarkup(
@@ -29,7 +34,7 @@ async def command_start_handler(message: Message) -> None:
             [
                 InlineKeyboardButton(
                     text="🎲 Открыть рулетку",
-                    web_app=WebAppInfo(url=f"{WEB_APP_URL}/")
+                    web_app=WebAppInfo(url=f"{WEB_APP_URL}"https://cs-2.onrender.com")
                 )
             ]
         ]
@@ -39,16 +44,31 @@ async def command_start_handler(message: Message) -> None:
         reply_markup=markup
     )
 
-# Основная функция запуска бота
-async def main() -> None:
-    # !!! ДОБАВЬТЕ ЭТУ СТРОКУ, ЧТОБЫ УДАЛИТЬ WEBHOOK !!!
-    logging.info("Deleting old webhooks...")
-    await bot.delete_webhook(drop_pending_updates=True) # drop_pending_updates=True удалит все необработанные обновления
-    logging.info("Webhook deleted. Starting bot polling...")
-    # !!! КОНЕЦ ДОБАВЛЕННОГО КОДА !!!
+# --- Дополнительный FastAPI для "держания порта открытым" ---
+web_app = FastAPI()
 
+@web_app.get("/health")
+async def health_check():
+    return {"status": "ok", "message": "Bot is alive and listening."}
+
+# Функция для запуска FastAPI в отдельном потоке
+def run_fastapi_server():
+    port = int(os.getenv('PORT', 8000)) # Render предоставляет порт через ENV
+    uvicorn.run(web_app, host="0.0.0.0", port=port)
+
+# --- Основная функция запуска (теперь с FastAPI в потоке) ---
+async def main() -> None:
+    logging.info("Deleting old webhooks...")
+    await bot.delete_webhook(drop_pending_updates=True)
+    logging.info("Webhook deleted. Starting bot polling...")
+
+    # Запускаем FastAPI сервер в отдельном потоке
+    # Render увидит, что этот HTTP-сервер слушает порт
+    Thread(target=run_fastapi_server, daemon=True).start()
+    logging.info(f"FastAPI health check server started on port {os.getenv('PORT', 8000)}")
+
+    # Запускаем Long Polling бота
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-
