@@ -34,7 +34,7 @@ async def command_start_handler(message: Message) -> None:
             [
                 InlineKeyboardButton(
                     text="🎲 Открыть рулетку",
-                    web_app=WebAppInfo(url=f"{WEB_APP_URL}"https://cs-2.onrender.com")
+                    web_app=WebAppInfo(url="https://cs-2.onrender.com") 
                 )
             ]
         ]
