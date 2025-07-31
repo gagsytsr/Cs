@@ -37,7 +37,7 @@ async def send_welcome(message: types.Message):
         reply_markup=types.ReplyKeyboardMarkup(resize_keyboard=True).add(
             types.KeyboardButton(
                 "🎲 Открыть рулетку",
-                web_app=types.WebAppInfo("https://твой-домен.onrender.com")  # ПОМНИ: замени это на реальный URL от Render!
+                web_app=types.WebAppInfo("https://cs-1-870u.onrender.com")  # ПОМНИ: замени это на реальный URL от Render!
             )
         )
     )
