@@ -5,28 +5,76 @@ from pydantic import BaseModel
 import os
 import random
 import logging
+import asyncio # Добавлено
+import uvicorn # Добавлено
+
+# --- Код бота (из bot.py) ---
+from aiogram import Bot, Dispatcher
+from aiogram.enums import ParseMode
+from aiogram.filters import CommandStart
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.client.default import DefaultBotProperties
 
 logging.basicConfig(level=logging.INFO)
 
+TOKEN = os.getenv("BOT_TOKEN")
+WEB_APP_URL = os.getenv("WEB_APP_URL") # Здесь будет URL FastAPI
+
+if not TOKEN:
+    logging.error("Telegram Bot Token (BOT_TOKEN) not found in environment variables.")
+    # Не выходим, так как это может быть тестовый запуск FastAPI
+    # Но бот не будет работать без токена
+
+# Инициализация бота
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+dp = Dispatcher()
+
+@dp.message(CommandStart())
+async def command_start_handler(message: Message) -> None:
+    if not WEB_APP_URL:
+        await message.answer("Ошибка: WEB_APP_URL не настроен. Пожалуйста, обратитесь к администратору.")
+        return
+
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🎲 Открыть рулетку",
+                    web_app=WebAppInfo(url=f"{WEB_APP_URL}/")
+                )
+            ]
+        ]
+    )
+    await message.answer(
+        f"Привет, {message.from_user.full_name}! Нажми кнопку, чтобы открыть кейсы:",
+        reply_markup=markup
+    )
+
+async def start_bot():
+    if TOKEN:
+        logging.info("Deleting old webhooks...")
+        await bot.delete_webhook(drop_pending_updates=True)
+        logging.info("Webhook deleted. Starting bot polling...")
+        await dp.start_polling(bot)
+    else:
+        logging.warning("BOT_TOKEN not set. Telegram bot will not start.")
+# --- Конец кода бота ---
+
 app = FastAPI()
 
-# 1. Отдача статических файлов (HTML, CSS, JS, Images)
-# Убедитесь, что папка 'public' существует в корне вашего проекта
 app.mount("/public", StaticFiles(directory="public"), name="public")
 
-# Отдача главной страницы mini-app (index.html)
 @app.get("/", response_class=HTMLResponse)
 async def serve_webapp_index():
     return FileResponse(os.path.join("public", "index.html"))
 
-# --- Игровая логика (очень упрощенная пока) ---
-# В реальном приложении это должно быть в базе данных!
+# ... (Весь остальной код FastAPI, User, SKINS, API-endpoints) ...
 
-class User:
-    def __init__(self, user_id: int, balance: int = 100):
-        self.user_id = user_id
-        self.balance = balance
-        self.inventory = [] # Просто список имен скинов
+# API для получения информации о пользователе
+class User(BaseModel): # Добавим BaseModel для корректной работы pydantic
+    user_id: int
+    balance: int = 100
+    inventory: list = [] # Просто список имен скинов
 
 # Временное хранилище пользователей (в памяти, исчезнет при перезапуске)
 users = {}
@@ -65,11 +113,10 @@ def get_random_skin():
     return random.choice(SKINS)
 
 
-# API для получения информации о пользователе
 @app.get("/api/user/{user_id}", response_model=User)
 async def get_user_info(user_id: int):
     if user_id not in users:
-        users[user_id] = User(user_id) # Создаем нового пользователя, если не существует
+        users[user_id] = User(user_id=user_id) # Создаем нового пользователя, если не существует
     return users[user_id]
 
 # API для открытия кейса
@@ -93,3 +140,13 @@ async def open_case(user_id: int):
 @app.get("/api/skins")
 async def get_all_skins():
     return {"skins": SKINS}
+
+
+# Основная точка входа для запуска обоих сервисов
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(start_bot()) # Запускаем бота как фоновую задачу
+
+if __name__ == "__main__":
+    # Uvicorn будет запущен на порту, предоставленном Pella.app
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
