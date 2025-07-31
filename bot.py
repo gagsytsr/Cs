@@ -37,7 +37,7 @@ async def send_welcome(message: types.Message):
         reply_markup=types.ReplyKeyboardMarkup(resize_keyboard=True).add(
             types.KeyboardButton(
                 "🎲 Открыть рулетку",
-                web_app=types.WebAppInfo("https://твой-домен.onrender.com")  # замени на реальную ссылку
+                web_app=types.WebAppInfo("https://твой-домен.onrender.com")  # ПОМНИ: замени это на реальный URL от Render!
             )
         )
     )
@@ -45,6 +45,7 @@ async def send_welcome(message: types.Message):
 # Запуск FastAPI и бота одновременно
 if __name__ == "__main__":
     def start_web():
+        # Render использует порт, указанный в переменной окружения PORT
         uvicorn.run(app, host="0.0.0.0", port=int(os.getenv('PORT', 8000)))
 
     threading.Thread(target=start_web).start()
