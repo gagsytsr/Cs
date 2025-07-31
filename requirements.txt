@@ -1,5 +1,5 @@
-[span_0](start_span)aiogram>=3.10.0[span_0](end_span)
-[span_1](start_span)fastapi>=0.111.0[span_1](end_span)
-[span_2](start_span)uvicorn[standard]>=0.30.0[span_2](end_span)
-[span_3](start_span)aiohttp>=3.9.0[span_3](end_span)
+aiogram>=3.10.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+aiohttp>=3.9.0
 python-dotenv
