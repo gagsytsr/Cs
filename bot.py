@@ -17,7 +17,7 @@ TOKEN = os.getenv("BOT_TOKEN") # Изменено с "KEY" на "BOT_TOKEN" дл
 
 # URL вашего FastAPI сервиса на Render, который будет отдавать Web App
 # ЭТУ ССЫЛКУ НУЖНО БУДЕТ ЗАМЕНИТЬ НА РЕАЛЬНЫЙ URL ВАШЕГО РАЗВЕРНУТОГО FastAPI-СЕРВИСА НА RENDER!
-WEB_APP_URL = os.getenv("WEB_APP_URL", "https://cs-1-5db8.onrender.com") # Пример
+WEB_APP_URL = os.getenv("WEB_APP_URL", "https://cs-2.onrender.com") # Пример
 
 # Убедитесь, что токен доступен
 if not TOKEN:
